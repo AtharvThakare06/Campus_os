@@ -101,7 +101,8 @@ app.listen(PORT, () => {
 });
 
 // New: Default route to load index.html when someone visits the live link
-app.get('*', (req, res) => {
+// Fallback route to load index.html safely
+app.use((req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 

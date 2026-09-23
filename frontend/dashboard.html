@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus OS - Dashboard</title>
+    <!-- CSS file link (Hi link asne khup mahatvache ahe design sathi) -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dashboard-body">
+    
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <h2>Campus OS</h2>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" id="nav-academic" onclick="showSection('academic')">Academic & Lab Hub</a></li>
+            <li><a href="#" id="nav-notice" onclick="showSection('notice')">Digital Notice Board</a></li>
+            <li><a href="#" id="nav-library" onclick="showSection('library')">E-Library</a></li>
+            <li><a href="#" onclick="logout()">Logout</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        
+        <!-- Academic Section -->
+        <div id="academic" class="content-section">
+            <h2>Academic & Lab Hub</h2>
+            <p>Welcome to the academic portal. Timetables and lab schedules will appear here.</p>
+        </div>
+
+        <!-- Notice Board Section -->
+        <div id="notice" class="content-section" style="display: none;">
+            <h2>Digital Notice Board</h2>
+            <p>Important announcements and college notices:</p>
+            
+            <!-- Dynamic notices will be loaded inside this div -->
+            <div id="noticeContainer" style="margin-top: 20px;">
+                <p>Loading notices...</p>
+            </div>
+        </div>
+
+        <!-- E-Library Section -->
+        <div id="library" class="content-section" style="display: none;">
+            <h2>E-Library</h2>
+            <p>Download study materials, notes, and previous year question papers.</p>
+            <ul style="margin-top: 15px; line-height: 2;">
+                <!-- AI, SPCC, IOT he vishay add kele ahet -->
+                <li><a href="#">Artificial Intelligence (AI) - Unit 1 Notes</a></li>
+                <li><a href="#">System Programming (SPCC) - Lab Manual</a></li>
+                <li><a href="#">Internet of Things (IoT) - Question Bank</a></li>
+            </ul>
+        </div>
+
+    </div>
+
+    <!-- JavaScript file link -->
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

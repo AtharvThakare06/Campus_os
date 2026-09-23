@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus OS - Login</title>
+    <!-- CSS file link -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="login-container">
+        
+        <!-- College Logo and Title -->
+        <div class="logo-section">
+            <img src="images/logo.png" alt="College Logo" class="logo">
+            <h2>Campus OS</h2>
+        </div>
+
+        <!-- Role Selection Tabs -->
+        <div class="role-tabs">
+            <button class="tab-btn active" onclick="changeRole('Student', this)">Student</button>
+            <button class="tab-btn" onclick="changeRole('Faculty', this)">Faculty</button>
+            <button class="tab-btn" onclick="changeRole('Principal', this)">Principal</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="login-form">
+            <h3 id="form-title">Student Login</h3>
+            
+            <div class="input-group">
+                <label for="userId">User ID / Roll No</label>
+                <input type="text" id="userId" placeholder="Enter your ID" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Password</label>
+                <div class="password-wrapper" style="position: relative;">
+                    <input type="password" id="password" placeholder="Enter your password" required>
+                    <!-- Show Password Checkbox -->
+                    <label style="font-size: 12px; margin-top: 5px; cursor: pointer; display: inline-block;">
+                        <input type="checkbox" id="showPasswordToggle" onclick="togglePassword()"> Show Password
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Message Display Area (Success or Error messages will appear here) -->
+            <div id="loginMessage" style="margin-bottom: 15px; font-weight: bold; font-size: 14px; text-align: center;"></div>
+
+            <button type="submit" class="login-btn">Login</button>
+        </form>
+
+    </div>
+
+    <!-- JavaScript file link -->
+    <script src="js/script.js"></script>
+</body>
+</html>

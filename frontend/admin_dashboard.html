@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus OS - Admin Panel</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dashboard-body">
+    
+    <!-- Admin Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <h2>Campus OS Admin</h2>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" id="nav-addUser" onclick="showAdminSection('addUser')">Add New User</a></li>
+            <li><a href="#" id="nav-addNotice" onclick="showAdminSection('addNotice')">Post Notice</a></li>
+            <li><a href="#" onclick="logout()">Logout</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        
+        <!-- Add User Section -->
+        <div id="addUser" class="content-section">
+            <h2>Add New User (Student/Faculty)</h2>
+            <p style="margin-bottom: 20px;">Use this form to register new users.</p>
+            <form id="addUserForm" style="max-width: 400px;">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="newName" placeholder="Enter Full Name" required>
+                </div>
+                <div class="input-group">
+                    <label>Role</label>
+                    <select id="newRole" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;" required>
+                        <option value="Student">Student</option>
+                        <option value="Faculty">Faculty</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>User ID / Roll No</label>
+                    <input type="text" id="newUserId" placeholder="Assign an ID" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="newPassword" placeholder="Assign a Password" required>
+                </div>
+                <div id="addMessage" style="margin-bottom: 15px; font-weight: bold; font-size: 14px;"></div>
+                <button type="submit" class="login-btn">Register User</button>
+            </form>
+        </div>
+
+        <!-- Post Notice Section (New) -->
+        <div id="addNotice" class="content-section" style="display: none;">
+            <h2>Post Digital Notice</h2>
+            <p style="margin-bottom: 20px;">Publish announcements for all students.</p>
+            <form id="addNoticeForm" style="max-width: 500px;">
+                <div class="input-group">
+                    <label>Notice Title</label>
+                    <input type="text" id="noticeTitle" placeholder="E.g., Smart India Hackathon Registration" required>
+                </div>
+                <div class="input-group">
+                    <label>Notice Details</label>
+                    <textarea id="noticeContent" rows="5" placeholder="Enter notice details..." style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;" required></textarea>
+                </div>
+                <div id="noticeMessage" style="margin-bottom: 15px; font-weight: bold; font-size: 14px;"></div>
+                <button type="submit" class="login-btn">Publish Notice</button>
+            </form>
+        </div>
+
+    </div>
+
+    <script src="js/admin.js"></script>
+    <script>
+        function logout() { window.location.href = 'index.html'; }
+    </script>
+</body>
+</html>

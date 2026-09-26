@@ -14,14 +14,23 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 // AUTO-GENERATE TEST ACCOUNTS & TABLES
 // =========================================
 db.serialize(() => {
-    // 1. Create Users Table
+    
+    // 1. Create Users Table & Insert Default Users
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         userId TEXT UNIQUE,
         password TEXT,
         role TEXT,
         name TEXT
-    )`);
+    )`, (err) => {
+        if (!err) {
+            db.run(`INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('STU01', 'password123', 'Student', 'Atharv Thakare')`);
+            db.run(`INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('FAC01', 'faculty123', 'Faculty', 'Test Faculty')`);
+            db.run(`INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('PRIN01', 'admin123', 'Principal', 'Principal Sir')`);
+        } else {
+            console.error("Error creating users table:", err.message);
+        }
+    });
 
     // 2. Create Notices Table
     db.run(`CREATE TABLE IF NOT EXISTS notices (
@@ -31,14 +40,27 @@ db.serialize(() => {
         date TEXT
     )`);
 
-    // 3. Create Labs Table
+    // 3. Create Labs Table & Insert Default Labs
     db.run(`CREATE TABLE IF NOT EXISTS labs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
         status TEXT,
         subject TEXT,
         time TEXT
-    )`);
+    )`, (err) => {
+        if (!err) {
+            db.get("SELECT COUNT(*) AS count FROM labs", (err, row) => {
+                if (row && row.count === 0) {
+                    db.run(`INSERT INTO labs (name, status, subject, time) VALUES ('Lab 1 (Programming)', 'Available', '-', 'Free all day')`);
+                    db.run(`INSERT INTO labs (name, status, subject, time) VALUES ('Lab 2 (Networking)', 'Available', '-', 'Free all day')`);
+                    db.run(`INSERT INTO labs (name, status, subject, time) VALUES ('Lab 3 (AI & Data Science)', 'Available', '-', 'Free all day')`);
+                    db.run(`INSERT INTO labs (name, status, subject, time) VALUES ('Lab 4 (Hardware)', 'Available', '-', 'Free all day')`);
+                }
+            });
+        } else {
+            console.error("Error creating labs table:", err.message);
+        }
+    });
 
     // 4. Create Materials Table
     db.run(`CREATE TABLE IF NOT EXISTS materials (
@@ -48,23 +70,6 @@ db.serialize(() => {
         link TEXT,
         date TEXT
     )`);
-
-    // 5. Insert Default Users safely (No db.prepare)
-    const insertUser = `INSERT OR IGNORE INTO users (userId, password, role, name) VALUES (?, ?, ?, ?)`;
-    db.run(insertUser, ["STU01", "password123", "Student", "Atharv Thakare"]);
-    db.run(insertUser, ["FAC01", "faculty123", "Faculty", "Test Faculty"]);
-    db.run(insertUser, ["PRIN01", "admin123", "Principal", "Principal Sir"]);
-
-    // 6. Insert Default Labs safely (No db.prepare)
-    db.get("SELECT COUNT(*) AS count FROM labs", (err, row) => {
-        if (row && row.count === 0) {
-            const insertLab = `INSERT INTO labs (name, status, subject, time) VALUES (?, ?, ?, ?)`;
-            db.run(insertLab, ["Lab 1 (Programming)", "Available", "-", "Free all day"]);
-            db.run(insertLab, ["Lab 2 (Networking)", "Available", "-", "Free all day"]);
-            db.run(insertLab, ["Lab 3 (AI & Data Science)", "Available", "-", "Free all day"]);
-            db.run(insertLab, ["Lab 4 (Hardware)", "Available", "-", "Free all day"]);
-        }
-    });
 });
 
 // 1. Status API

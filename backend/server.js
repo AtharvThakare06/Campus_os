@@ -59,11 +59,9 @@ db.serialize(() => {
         date TEXT
     )`);
 
-    const insert = db.prepare(`INSERT OR IGNORE INTO users (userId, password, role, name) VALUES (?, ?, ?, ?)`);
-    insert.run("STU01", "password123", "Student", "Atharv Thakare");
-    insert.run("FAC01", "faculty123", "Faculty", "Test Faculty");
-    insert.run("PRIN01", "admin123", "Principal", "Principal Sir");
-    insert.finalize();
+    db.run(`INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('STU01', 'password123', 'Student', 'Atharv Thakare')`);
+    db.run(`INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('FAC01', 'faculty123', 'Faculty', 'Test Faculty')`);
+    db.run(`INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('PRIN01', 'admin123', 'Principal', 'Principal Sir')`);
 });
 
 // 1. Status API

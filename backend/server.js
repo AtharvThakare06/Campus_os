@@ -1,18 +1,70 @@
-// backend/server.js
 const express = require('express');
 const cors = require('cors');
-const path = require('path'); // New: To find folder paths
+const path = require('path');
 const db = require('./database'); 
 
 const app = express();
-// Port dynamic kele ahe, karan live server swatahcha port ghato
 const PORT = process.env.PORT || 3000; 
 
 app.use(cors()); 
 app.use(express.json());
-
-// New: Server la frontend folder baddal mahiti dene
 app.use(express.static(path.join(__dirname, '../frontend')));
+
+// =========================================
+// AUTO-GENERATE TEST ACCOUNTS IN DATABASE
+// =========================================
+db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        userId TEXT UNIQUE,
+        password TEXT,
+        role TEXT,
+        name TEXT
+    )`);
+    
+    // Create Notices Table (This was missing)
+    db.run(`CREATE TABLE IF NOT EXISTS notices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        content TEXT,
+        date TEXT
+    )`);
+
+    // Create Labs Table
+    db.run(`CREATE TABLE IF NOT EXISTS labs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        status TEXT,
+        subject TEXT,
+        time TEXT
+    )`);
+
+    // Initialize default labs if the table is empty
+    db.get("SELECT COUNT(*) AS count FROM labs", (err, row) => {
+        if (row && row.count === 0) {
+            const insertLab = db.prepare("INSERT INTO labs (name, status, subject, time) VALUES (?, ?, ?, ?)");
+            insertLab.run("Lab 1 (Programming)", "Available", "-", "Free all day");
+            insertLab.run("Lab 2 (Networking)", "Available", "-", "Free all day");
+            insertLab.run("Lab 3 (AI & Data Science)", "Available", "-", "Free all day");
+            insertLab.run("Lab 4 (Hardware)", "Available", "-", "Free all day");
+            insertLab.finalize();
+        }
+    });
+
+    db.run(`CREATE TABLE IF NOT EXISTS materials (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        subject TEXT,
+        link TEXT,
+        date TEXT
+    )`);
+
+    const insert = db.prepare(`INSERT OR IGNORE INTO users (userId, password, role, name) VALUES (?, ?, ?, ?)`);
+    insert.run("STU01", "password123", "Student", "Atharv Thakare");
+    insert.run("FAC01", "faculty123", "Faculty", "Test Faculty");
+    insert.run("PRIN01", "admin123", "Principal", "Principal Sir");
+    insert.finalize();
+});
 
 // 1. Status API
 app.get('/api/status', (req, res) => {
@@ -25,7 +77,6 @@ app.post('/api/login', (req, res) => {
 
     console.log(`Login attempt: ${role} - ${userId}`);
 
-    // SQL query to verify credentials from the database
     const sqlQuery = `SELECT * FROM users WHERE userId = ? AND password = ? AND role = ?`;
     
     db.get(sqlQuery, [userId, password, role], (err, row) => {
@@ -33,10 +84,8 @@ app.post('/api/login', (req, res) => {
             console.error("Database error:", err.message);
             res.json({ success: false, message: "Internal server error" });
         } else if (row) {
-            // User exists and password matches
             res.json({ success: true, message: "Login Successful!", role: row.role, name: row.name });
         } else {
-            // Invalid credentials
             res.json({ success: false, message: "Invalid ID, Password, or Role" });
         }
     });
@@ -45,12 +94,10 @@ app.post('/api/login', (req, res) => {
 // 3. API to Add New User (Admin Panel use only)
 app.post('/api/adduser', (req, res) => {
     const { userId, password, role, name } = req.body;
-
     const sqlQuery = `INSERT INTO users (userId, password, role, name) VALUES (?, ?, ?, ?)`;
     
     db.run(sqlQuery, [userId, password, role, name], function(err) {
         if (err) {
-            // Check if User ID already exists in database
             if (err.message.includes('UNIQUE constraint failed')) {
                 res.json({ success: false, message: "User ID already exists!" });
             } else {
@@ -65,10 +112,7 @@ app.post('/api/adduser', (req, res) => {
 // 4. API to Add Notice (For Admin Panel)
 app.post('/api/addnotice', (req, res) => {
     const { title, content } = req.body;
-    
-    // Get today's date automatically
     const date = new Date().toLocaleDateString('en-GB'); 
-
     const sqlQuery = `INSERT INTO notices (title, content, date) VALUES (?, ?, ?)`;
     
     db.run(sqlQuery, [title, content, date], function(err) {
@@ -83,9 +127,7 @@ app.post('/api/addnotice', (req, res) => {
 
 // 5. API to Fetch All Notices (For Student Dashboard)
 app.get('/api/notices', (req, res) => {
-    // ORDER BY id DESC means newest notices appear first
     const sqlQuery = `SELECT * FROM notices ORDER BY id DESC`; 
-    
     db.all(sqlQuery, [], (err, rows) => {
         if (err) {
             res.json({ success: false, notices: [] });
@@ -95,17 +137,117 @@ app.get('/api/notices', (req, res) => {
     });
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+// API to Upload Study Material (For Faculty Panel)
+app.post('/api/addmaterial', (req, res) => {
+    const { title, subject, link } = req.body;
+    const date = new Date().toLocaleDateString('en-GB'); 
+
+    const sqlQuery = `INSERT INTO materials (title, subject, link, date) VALUES (?, ?, ?, ?)`;
+    
+    db.run(sqlQuery, [title, subject, link, date], function(err) {
+        if (err) {
+            console.error("Error adding material:", err.message);
+            res.json({ success: false, message: "Database Error!" });
+        } else {
+            res.json({ success: true, message: "Material uploaded successfully!" });
+        }
+    });
 });
 
-// New: Default route to load index.html when someone visits the live link
+// API to Fetch All Study Materials (For Student Dashboard)
+app.get('/api/materials', (req, res) => {
+    const sqlQuery = `SELECT * FROM materials ORDER BY id DESC`; 
+    
+    db.all(sqlQuery, [], (err, rows) => {
+        if (err) {
+            console.error("Database error:", err.message);
+            res.json({ success: false, materials: [] });
+        } else {
+            res.json({ success: true, materials: rows });
+        }
+    });
+});
+
+// API to Delete Study Material (For Faculty Panel)
+app.delete('/api/deletematerial/:id', (req, res) => {
+    const materialId = req.params.id;
+    const sqlQuery = `DELETE FROM materials WHERE id = ?`;
+
+    db.run(sqlQuery, [materialId], function(err) {
+        if (err) {
+            console.error("Delete error:", err.message);
+            res.json({ success: false, message: "Failed to delete material." });
+        } else {
+            res.json({ success: true, message: "Material deleted successfully!" });
+        }
+    });
+});
+
+// API to Register New Users (Admin Only)
+app.post('/api/register', (req, res) => {
+    const { role, userId, password } = req.body;
+
+    // First check if the User ID already exists
+    const checkQuery = `SELECT * FROM users WHERE userId = ?`;
+    
+    db.get(checkQuery, [userId], (err, row) => {
+        if (err) {
+            console.error("Database error:", err.message);
+            res.json({ success: false, message: "Database Error!" });
+        } else if (row) {
+            // User already exists
+            res.json({ success: false, message: "User ID already exists! Try a different one." });
+        } else {
+            // Insert the new user into the database
+            const insertQuery = `INSERT INTO users (userId, password, role) VALUES (?, ?, ?)`;
+            
+            db.run(insertQuery, [userId, password, role], function(err) {
+                if (err) {
+                    console.error("Insert error:", err.message);
+                    res.json({ success: false, message: "Failed to register user." });
+                } else {
+                    res.json({ success: true, message: `${role} registered successfully!` });
+                }
+            });
+        }
+    });
+});
+
+// API to Fetch Live Lab Status
+app.get('/api/labs', (req, res) => {
+    const sqlQuery = `SELECT * FROM labs`;
+    db.all(sqlQuery, [], (err, rows) => {
+        if (err) {
+            console.error("Database error:", err.message);
+            res.json({ success: false, labs: [] });
+        } else {
+            res.json({ success: true, labs: rows });
+        }
+    });
+});
+
+// API to Update Lab Status (For Admin Panel)
+app.post('/api/updatelab', (req, res) => {
+    const { id, status, subject, time } = req.body;
+    
+    const sqlQuery = `UPDATE labs SET status = ?, subject = ?, time = ? WHERE id = ?`;
+    
+    db.run(sqlQuery, [status, subject, time, id], function(err) {
+        if (err) {
+            console.error("Update error:", err.message);
+            res.json({ success: false, message: "Failed to update lab status." });
+        } else {
+            res.json({ success: true, message: "Lab status updated successfully!" });
+        }
+    });
+});
+
 // Fallback route to load index.html safely
 app.use((req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
+// Start server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

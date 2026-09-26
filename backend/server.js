@@ -11,65 +11,64 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // =========================================
-// AUTO-GENERATE TEST ACCOUNTS & TABLES
+// AUTO-GENERATE TEST ACCOUNTS & TABLES (BULLETPROOF)
 // =========================================
 db.serialize(() => {
-    
-    // 1. Create Users Table & Insert Default Users
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        userId TEXT UNIQUE,
-        password TEXT,
-        role TEXT,
-        name TEXT
-    )`, (err) => {
-        if (!err) {
-            db.run(`INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('STU01', 'password123', 'Student', 'Atharv Thakare')`);
-            db.run(`INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('FAC01', 'faculty123', 'Faculty', 'Test Faculty')`);
-            db.run(`INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('PRIN01', 'admin123', 'Principal', 'Principal Sir')`);
+    const setupSQL = `
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            userId TEXT UNIQUE,
+            password TEXT,
+            role TEXT,
+            name TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS notices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            content TEXT,
+            date TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS labs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            status TEXT,
+            subject TEXT,
+            time TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS materials (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            subject TEXT,
+            link TEXT,
+            date TEXT
+        );
+
+        INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('STU01', 'password123', 'Student', 'Atharv Thakare');
+        INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('FAC01', 'faculty123', 'Faculty', 'Test Faculty');
+        INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('PRIN01', 'admin123', 'Principal', 'Principal Sir');
+    `;
+
+    // Execute all table creations and user inserts in one single atomic batch
+    db.exec(setupSQL, (err) => {
+        if (err) {
+            console.error("Database Table Creation Error:", err.message);
         } else {
-            console.error("Error creating users table:", err.message);
-        }
-    });
-
-    // 2. Create Notices Table
-    db.run(`CREATE TABLE IF NOT EXISTS notices (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        content TEXT,
-        date TEXT
-    )`);
-
-    // 3. Create Labs Table & Insert Default Labs
-    db.run(`CREATE TABLE IF NOT EXISTS labs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        status TEXT,
-        subject TEXT,
-        time TEXT
-    )`, (err) => {
-        if (!err) {
+            console.log("Database tables verified and users added successfully.");
+            
+            // Safe to insert default labs now, because tables are 100% created
             db.get("SELECT COUNT(*) AS count FROM labs", (err, row) => {
                 if (row && row.count === 0) {
-                    db.run(`INSERT INTO labs (name, status, subject, time) VALUES ('Lab 1 (Programming)', 'Available', '-', 'Free all day')`);
-                    db.run(`INSERT INTO labs (name, status, subject, time) VALUES ('Lab 2 (Networking)', 'Available', '-', 'Free all day')`);
-                    db.run(`INSERT INTO labs (name, status, subject, time) VALUES ('Lab 3 (AI & Data Science)', 'Available', '-', 'Free all day')`);
-                    db.run(`INSERT INTO labs (name, status, subject, time) VALUES ('Lab 4 (Hardware)', 'Available', '-', 'Free all day')`);
+                    db.run("INSERT INTO labs (name, status, subject, time) VALUES ('Lab 1 (Programming)', 'Available', '-', 'Free all day')");
+                    db.run("INSERT INTO labs (name, status, subject, time) VALUES ('Lab 2 (Networking)', 'Available', '-', 'Free all day')");
+                    db.run("INSERT INTO labs (name, status, subject, time) VALUES ('Lab 3 (AI & Data Science)', 'Available', '-', 'Free all day')");
+                    db.run("INSERT INTO labs (name, status, subject, time) VALUES ('Lab 4 (Hardware)', 'Available', '-', 'Free all day')");
                 }
             });
-        } else {
-            console.error("Error creating labs table:", err.message);
         }
     });
-
-    // 4. Create Materials Table
-    db.run(`CREATE TABLE IF NOT EXISTS materials (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        subject TEXT,
-        link TEXT,
-        date TEXT
-    )`);
 });
 
 // 1. Status API

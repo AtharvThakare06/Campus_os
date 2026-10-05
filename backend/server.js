@@ -20,13 +20,18 @@ db.serialize(() => {
             userId TEXT UNIQUE,
             password TEXT,
             role TEXT,
-            name TEXT
+            name TEXT,
+            department TEXT,
+            degree TEXT,
+            year TEXT
         );
 
         CREATE TABLE IF NOT EXISTS notices (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT,
             content TEXT,
+            target TEXT,
+            link TEXT,
             date TEXT
         );
 
@@ -46,9 +51,10 @@ db.serialize(() => {
             date TEXT
         );
 
-        INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('STU01', 'password123', 'Student', 'Atharv Thakare');
-        INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('FAC01', 'faculty123', 'Faculty', 'Test Faculty');
-        INSERT OR IGNORE INTO users (userId, password, role, name) VALUES ('PRIN01', 'admin123', 'Principal', 'Principal Sir');
+        -- Insert Default Users with ALL new columns to prevent 'null'
+        INSERT OR IGNORE INTO users (userId, password, role, name, department, degree, year) VALUES ('STU01', 'password123', 'Student', 'Atharv Thakare', 'Computer', 'Degree', 'BE');
+        INSERT OR IGNORE INTO users (userId, password, role, name, department, degree, year) VALUES ('FAC01', 'faculty123', 'Faculty', 'Test Faculty', 'Computer', '-', '-');
+        INSERT OR IGNORE INTO users (userId, password, role, name, department, degree, year) VALUES ('ADMIN01', 'admin123', 'Admin', 'System Admin', 'Administration', '-', '-');
     `;
 
     // Execute all table creations and user inserts in one single atomic batch
@@ -58,7 +64,7 @@ db.serialize(() => {
         } else {
             console.log("Database tables verified and users added successfully.");
             
-            // Safe to insert default labs now, because tables are 100% created
+            // Safe to insert default labs now
             db.get("SELECT COUNT(*) AS count FROM labs", (err, row) => {
                 if (row && row.count === 0) {
                     db.run("INSERT INTO labs (name, status, subject, time) VALUES ('Lab 1 (Programming)', 'Available', '-', 'Free all day')");
@@ -114,19 +120,34 @@ app.post('/api/adduser', (req, res) => {
     });
 });
 
-// 4. API to Add Notice (For Admin Panel)
+// 1. API to Add Notice (With Target & Link)
 app.post('/api/addnotice', (req, res) => {
-    const { title, content } = req.body;
+    const { title, content, target, link } = req.body;
     const date = new Date().toLocaleDateString('en-GB'); 
-    const sqlQuery = `INSERT INTO notices (title, content, date) VALUES (?, ?, ?)`;
     
-    db.run(sqlQuery, [title, content, date], function(err) {
-        if (err) {
-            console.error("Error adding notice:", err.message);
-            res.json({ success: false, message: "Database Error!" });
-        } else {
-            res.json({ success: true, message: "Notice published successfully!" });
-        }
+    db.run(`INSERT INTO notices (title, content, target, link, date) VALUES (?, ?, ?, ?, ?)`, 
+    [title, content, target, link, date], function(err) {
+        if (err) res.json({ success: false, message: "Database Error!" });
+        else res.json({ success: true, message: "Notice published successfully!" });
+    });
+});
+
+// 2. API to Update/Edit Notice
+app.put('/api/updatenotice/:id', (req, res) => {
+    const { title, content, target, link } = req.body;
+    
+    db.run(`UPDATE notices SET title = ?, content = ?, target = ?, link = ? WHERE id = ?`, 
+    [title, content, target, link, req.params.id], function(err) {
+        if (err) res.json({ success: false, message: "Failed to update notice." });
+        else res.json({ success: true, message: "Notice updated successfully!" });
+    });
+});
+
+// 3. API to Delete Notice
+app.delete('/api/deletenotice/:id', (req, res) => {
+    db.run(`DELETE FROM notices WHERE id = ?`, [req.params.id], function(err) {
+        if (err) res.json({ success: false, message: "Failed to delete notice." });
+        else res.json({ success: true, message: "Notice deleted successfully!" });
     });
 });
 
@@ -188,33 +209,32 @@ app.delete('/api/deletematerial/:id', (req, res) => {
     });
 });
 
-// API to Register New Users (Admin Only)
+// API to Register New Users
 app.post('/api/register', (req, res) => {
-    const { role, userId, password } = req.body;
+    const { role, userId, password, name, department, degree, year } = req.body;
 
-    // First check if the User ID already exists
     const checkQuery = `SELECT * FROM users WHERE userId = ?`;
-    
     db.get(checkQuery, [userId], (err, row) => {
-        if (err) {
-            console.error("Database error:", err.message);
-            res.json({ success: false, message: "Database Error!" });
-        } else if (row) {
-            // User already exists
-            res.json({ success: false, message: "User ID already exists! Try a different one." });
+        if (row) {
+            res.json({ success: false, message: "User ID already exists!" });
         } else {
-            // Insert the new user into the database
-            const insertQuery = `INSERT INTO users (userId, password, role) VALUES (?, ?, ?)`;
-            
-            db.run(insertQuery, [userId, password, role], function(err) {
-                if (err) {
-                    console.error("Insert error:", err.message);
-                    res.json({ success: false, message: "Failed to register user." });
-                } else {
-                    res.json({ success: true, message: `${role} registered successfully!` });
-                }
+            const insertQuery = `INSERT INTO users (userId, password, role, name, department, degree, year) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+            db.run(insertQuery, [userId, password, role, name, department, degree, year], function(err) {
+                if (err) res.json({ success: false, message: "Failed to register user." });
+                else res.json({ success: true, message: `${role} registered successfully!` });
             });
         }
+    });
+});
+
+// API to Update User
+app.put('/api/updateuser/:id', (req, res) => {
+    const { userId, password, name, department, degree, year } = req.body;
+    const query = `UPDATE users SET userId = ?, password = ?, name = ?, department = ?, degree = ?, year = ? WHERE id = ?`;
+    
+    db.run(query, [userId, password, name, department, degree, year, req.params.id], function(err) {
+        if (err) res.json({ success: false, message: "Failed to update user." });
+        else res.json({ success: true, message: "User updated successfully!" });
     });
 });
 
@@ -243,6 +263,28 @@ app.post('/api/updatelab', (req, res) => {
             res.json({ success: false, message: "Failed to update lab status." });
         } else {
             res.json({ success: true, message: "Lab status updated successfully!" });
+        }
+    });
+});
+
+// API to Fetch All Users (For Admin Panel)
+app.get('/api/users', (req, res) => {
+    db.all(`SELECT * FROM users ORDER BY role, name`, [], (err, rows) => {
+        if (err) {
+            res.json({ success: false, users: [] });
+        } else {
+            res.json({ success: true, users: rows });
+        }
+    });
+});
+
+// API to Delete User (For Admin Panel)
+app.delete('/api/deleteuser/:id', (req, res) => {
+    db.run(`DELETE FROM users WHERE id = ?`, [req.params.id], function(err) {
+        if (err) {
+            res.json({ success: false, message: "Failed to delete user." });
+        } else {
+            res.json({ success: true, message: "User deleted successfully!" });
         }
     });
 });
